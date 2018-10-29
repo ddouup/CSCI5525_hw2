@@ -8,7 +8,7 @@ MIN_MULTIPLIER_THRESHOLD=1e-8
 
 
 class KFold():
-	def __init__(self, num_crossval, shuffle = False):
+	def __init__(self, num_crossval, shuffle = True):
 		self.num_crossval = num_crossval
 		self.shuffle = shuffle
 
@@ -78,25 +78,13 @@ class SVM():
 		self.sup_num = len(self.a)
 		print("%d support vectors out of %d points" % (self.sup_num, self.num))
 
-		# Intercept
+		# get bias
 		for n in range(len(self.a)):
 			self.bias += self.sv_y[n]
 			self.bias -= np.sum(self.a * self.sv_y)
 		self.bias /= len(self.a)
 		print("Bias:",self.bias)
-		'''
-		support = np.argwhere(alphas>1e-8).reshape((-1,1))
-		self.sup_num = len(support)
-		
-		# get bias
-		cond = (alphas > 1e-4).reshape(-1)
-		print(cond.shape)
-		print(self.y[cond])
-		print(self.X[cond])
-		print(self.w.shape)
-		b = self.y[cond] - np.dot(self.X[cond], self.w)
-		self.bias = b[0]
-		'''
+
 
 		self.w = np.sum(alphas * self.y * self.X, axis = 0)
 
@@ -167,7 +155,7 @@ def myDualSVM(filename, C):
 		model = SVM(C).fit(X_train, y_train)
 		error[i] = model.score(X_test, y_test)
 		support_num[i] = model.getSupNum()
-		margin[i] = np.linalg.norm(model.getWeight())
+		margin[i] = 1/np.linalg.norm(model.getWeight())
 
 	print('Error mean:',np.mean(error))
 	print('Error std:',np.std(error))
@@ -188,6 +176,7 @@ def main():
 		error_mean,error_std,sv_num_mean,sv_num_std,margin_mean,margin_std=myDualSVM(filename, c)
 		output =str(c)+','+str(error_mean)+','+str(error_std)+','+str(sv_num_mean)+','+str(sv_num_std)+','+str(margin_mean)+','+str(margin_std)+'\n'
 		f.write(output)
+		#f.write('%.3f,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f' %(c,error_mean,error_std,sv_num_mean,sv_num_std,margin_mean,margin_std))
 
 	f.close()
 
