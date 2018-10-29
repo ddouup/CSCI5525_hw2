@@ -119,6 +119,8 @@ def myPegasos(filename, k, numruns):
 
 	runtime = np.ones((numruns, 1))
 
+	fig = plt.figure()
+
 	for i in range(numruns):
 		print('The',i+1,'run of total',numruns,'runs')
 		start = time.time()
@@ -129,30 +131,39 @@ def myPegasos(filename, k, numruns):
 
 		plt.plot(model.getObjValue(), ',-')
 
+	plt.title('Batch size: '+str(k))
 	plt.ylabel('Objective function value')
-	plt.show()
+	plt.xlabel('Number of iteration')
+	plt.legend()
 
+	if not os.path.exists('img/'):
+		os.makedirs('img/')
+	path = 'img/'+str(k)+'batch_myPegasos.png'
+	fig.savefig(path)
 
 	runtime_mean = np.mean(runtime)
 	runtime_std = np.std(runtime)
 	print('Runtime for each fold:')
 	print(runtime)
 	print('Runtime mean:',runtime_mean)
-	print('Runtime std:',runtime_mean)
+	print('Runtime std:',runtime_std)
 
-	return runtime_mean
-
+	return runtime_mean, runtime_std
 
 def main():
 	filename = sys.argv[1]
 	numruns = int(sys.argv[2])
 	np.random.seed(int(time.time()))
 
-	'''
+	f = open('myPegasos_result.csv','w')
+	f.write('k,mean,std\n')
+
 	for k in [1, 20, 200, 1000, 2000]:
-		myPegasos(filename, int(k), numruns)
-	'''
-	myPegasos(filename, 20, numruns)
+		mean, std = myPegasos(filename, int(k), numruns)
+		output = str(k)+','+str(mean)+','+str(std)+'\n'
+		f.write(output)
+
+	f.close()
 
 if __name__ == '__main__':
 	main()

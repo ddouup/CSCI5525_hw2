@@ -56,8 +56,6 @@ class SVM():
 				temp =-y_batch[k]*X_batch[k]
 				tempp = 1+np.exp(-(1-y_batch[k]*self.w.T.dot(X_batch[k]))/self.a)
 				gradient += (temp.reshape(-1,1)/tempp)
-
-			print(gradient.reshape((-1,)))
 			gradient += 2*self._lambda*self.w
 
 			w_new = self.w - self.eta * gradient
@@ -68,10 +66,6 @@ class SVM():
 			self.obj_value = np.append(self.obj_value, obj)
 
 			print(np.linalg.norm(gradient))
-			if i == 2:
-				#sys.exit()
-				pass
-			
 			if np.linalg.norm(gradient) < 1e-3:
 				print("Converge")
 				print("Number of iteration:",i)
@@ -79,7 +73,6 @@ class SVM():
 				break
 			else:
 				self.w = w_new
-			
 			
 			#self.w = w_new
 		
@@ -127,6 +120,8 @@ def mySoftplus(filename, k, numruns):
 
 	runtime = np.ones((numruns, 1))
 
+	fig = plt.figure()
+
 	for i in range(numruns):
 		print('The',i+1,'run of total',numruns,'runs')
 		start = time.time()
@@ -137,18 +132,24 @@ def mySoftplus(filename, k, numruns):
 
 		plt.plot(model.getObjValue(), ',-')
 
+	plt.title('Batch size: '+str(k))
 	plt.ylabel('Objective function value')
-	plt.show()
+	plt.xlabel('Number of iteration')
+	plt.legend()
 
+	if not os.path.exists('img/'):
+		os.makedirs('img/')
+	path = 'img/'+str(k)+'batch_mySoftplus.png'
+	fig.savefig(path)
 
 	runtime_mean = np.mean(runtime)
 	runtime_std = np.std(runtime)
 	print('Runtime for each fold:')
 	print(runtime)
 	print('Runtime mean:',runtime_mean)
-	print('Runtime std:',runtime_mean)
+	print('Runtime std:',runtime_std)
 
-	return runtime_mean
+	return runtime_mean, runtime_std
 
 
 def main():
@@ -156,11 +157,15 @@ def main():
 	numruns = int(sys.argv[2])
 	np.random.seed(int(time.time()))
 
-	'''
+	f = open('mySoftplus_result.csv','w')
+	f.write('k,mean,std\n')
+
 	for k in [1, 20, 200, 1000, 2000]:
-		mySoftplus(filename, int(k), numruns)
-	'''
-	mySoftplus(filename, 20, numruns)
+		mean, std = mySoftplus(filename, int(k), numruns)
+		output = str(k)+','+str(mean)+','+str(std)+'\n'
+		f.write(output)
+
+	f.close()
 
 if __name__ == '__main__':
 	main()

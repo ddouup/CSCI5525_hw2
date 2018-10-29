@@ -69,11 +69,33 @@ class SVM():
 
 		sol = solvers.qp(P, q, G, h, A, b)
 		alphas = np.array(sol['x'])
+		
+		# Support vectors have non zero lagrange multipliers
+		index = alphas > 1e-8
+		self.a = alphas[index]
+		self.sv_y = self.y[index]
+		self.sv = self.X[np.where(index), :]
+		self.sup_num = len(self.a)
+		print("%d support vectors out of %d points" % (self.sup_num, self.num))
+
+		# Intercept
+		for n in range(len(self.a)):
+			self.bias += self.sv_y[n]
+			self.bias -= np.sum(self.a * self.sv_y)
+		self.bias /= len(self.a)
+		print("Bias:",self.bias)
 		'''
+		support = np.argwhere(alphas>1e-8).reshape((-1,1))
+		self.sup_num = len(support)
+		
 		# get bias
 		cond = (alphas > 1e-4).reshape(-1)
-		b = y[cond] - np.dot(x[cond], w)
-		bias = b[0]
+		print(cond.shape)
+		print(self.y[cond])
+		print(self.X[cond])
+		print(self.w.shape)
+		b = self.y[cond] - np.dot(self.X[cond], self.w)
+		self.bias = b[0]
 		'''
 
 		self.w = np.sum(alphas * self.y * self.X, axis = 0)
@@ -81,10 +103,11 @@ class SVM():
 		return self
 
 	def predict(self, X_test):
+		print()
 		print("Test data size: ", X_test.shape)
 		y_pre = np.array([], dtype=int)
 		for x in X_test:
-			pre = np.sign(np.dot(self.w.T,x))
+			pre = np.sign(np.dot(self.w.T,x)+self.bias)
 			y_pre = np.append(y_pre, pre)
 
 		return y_pre
@@ -103,6 +126,12 @@ class SVM():
 		print()
 
 		return error
+
+	def getSupNum(self):
+		return self.sup_num
+
+	def getWeight(self):
+		return self.w
 
 
 def myDualSVM(filename, C):
@@ -125,6 +154,8 @@ def myDualSVM(filename, C):
 			y[i] = 1
 	
 	error = np.ones((NUM_CROSSVAL, 1))
+	margin = np.zeros((NUM_CROSSVAL, 1))
+	support_num = np.zeros((NUM_CROSSVAL, 1))
 
 	rs = KFold(num_crossval=NUM_CROSSVAL)
 	for train_index, test_index, i in rs.split(y):
@@ -135,22 +166,30 @@ def myDualSVM(filename, C):
 
 		model = SVM(C).fit(X_train, y_train)
 		error[i] = model.score(X_test, y_test)
+		support_num[i] = model.getSupNum()
+		margin[i] = np.linalg.norm(model.getWeight())
 
-	error_mean = np.mean(error)
-	error_std = np.std(error)
-	print('Error rate for each fold:')
-	print(error)
-	print('Error mean:',error_mean)
-	print('Error std:',error_mean)
+	print('Error mean:',np.mean(error))
+	print('Error std:',np.std(error))
+	print('Number of support vectors mean:',np.mean(support_num))
+	print('Number of support vectors std:',np.std(support_num))
+	print('Margin mean:',np.mean(margin))
+	print('Margin std:',np.std(margin))
 
-	return error_mean
+	return np.mean(error), np.std(error), np.mean(support_num), np.std(support_num), np.mean(margin), np.std(margin)
 
 
 def main():
 	filename = sys.argv[1]
-	C = float(sys.argv[2])
 
-	myDualSVM(filename, C)
+	f = open('myDualSVM_result.csv','w')
+	f.write('c,error_mean,error_std,sv_num_mean,sv_num_std,margin_mean,margin_std\n')
+	for c in [0.01, 0.1, 1, 10, 100]:
+		error_mean,error_std,sv_num_mean,sv_num_std,margin_mean,margin_std=myDualSVM(filename, c)
+		output =str(c)+','+str(error_mean)+','+str(error_std)+','+str(sv_num_mean)+','+str(sv_num_std)+','+str(margin_mean)+','+str(margin_std)+'\n'
+		f.write(output)
+
+	f.close()
 
 
 if __name__ == '__main__':
