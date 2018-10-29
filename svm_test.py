@@ -26,4 +26,3 @@ X = validate[:, 0:2]
 Y = validate[:, 2:3]
 # plot validation results
 plotDecisionBoundary(X, Y, predictSVM, [-1, 0, 1], title = 'SVM Validate')
-
